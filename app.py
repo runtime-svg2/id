@@ -1,14 +1,24 @@
 from flask import Flask, request, jsonify
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
+import json
 
 # Google Sheets setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+
+# Load credentials from environment variable or file
+creds_json = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
+if creds_json:
+    creds_dict = json.loads(creds_json)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+else:
+    creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+
 client = gspread.authorize(creds)
 
 # Open the Google Sheet
-SHEET_ID = "1S4o_sYw6WQddx9xEYX-UGkiDWT_V1fIsvmYIdRWlxUo"
+SHEET_ID = os.environ.get("SHEET_ID", "1S4o_sYw6WQddx9xEYX-UGkiDWT_V1fIsvmYIdRWlxUo")
 sheet = client.open_by_key(SHEET_ID).sheet1
 
 # Flask app
@@ -49,4 +59,5 @@ def shopify_webhook():
     return jsonify({"status": "success"}), 200
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
